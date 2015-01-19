@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	paramRegex = regexp.MustCompile(paramChar + "([a-z_]+)")
+	paramRegex = regexp.MustCompile(paramChar + "([a-zA-Z_]+)")
 )
 
 // NewRouter builds a new router.

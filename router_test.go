@@ -17,7 +17,7 @@ func TestBuildRouter(t *testing.T) {
 
 	r := NewRouter()
 
-	r.HandleFunc("/post/:id/:post_title", NewReq("Id", "[0-9]+"), func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/post/:Id/:post_title", NewReq("Id", "[0-9]+"), func(w http.ResponseWriter, r *http.Request) {
 		// logic here
 	})
 
