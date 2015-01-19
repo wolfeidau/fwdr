@@ -22,58 +22,68 @@ func NewRouter() *Router {
 
 // Router holds the state of all http routes and demuxes requests across them in the based order they are added.
 type Router struct {
+
+	// Configurable Handler to be used when there is no matching route.
+	NotFoundHandler http.Handler
+
 	// Routes to be matched, in order.
 	routes []*Route
 }
 
 // ServeHTTP method is used as an entry point for the mux by the http.Server
 func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	var match routeMatch
+	var handler http.Handler
+
+	if rtr.Match(r, &match) {
+		handler = match.handler
+		//setParams(r, match.Params)
+		//		setCurrentRoute(r, match.Route)
+	}
+	if handler == nil {
+		handler = rtr.NotFoundHandler
+		if handler == nil {
+			handler = http.NotFoundHandler()
+		}
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+func (rtr *Router) Match(r *http.Request, match *routeMatch) bool {
+
+	for _, rt := range rtr.routes {
+		matches := rt.regexp.FindAllStringSubmatch(r.URL.RequestURI(), -1)
+
+		log.Debugf("matches %v", matches)
+
+		if matches == nil {
+			continue
+		}
+
+		match.handler = rt.handler
+		match.params = make(map[string]string)
+
+		for i, attr := range rt.regexp.SubexpNames() {
+			if attr == "" {
+				continue
+			}
+			match.params[attr] = matches[0][i]
+		}
+
+		// log.Debugf("match.params %v", match.params)
+
+		return true
+	}
+
+	return false
+
 }
 
 // HandleFunc is used to attach a route to the router.
 func (rtr *Router) HandleFunc(pattern string, requirements *Reqs, handler func(http.ResponseWriter, *http.Request)) {
-
-	rt := &Route{rs: requirements, pattern: pattern}
-
-	rt.assignParams()
-
-	rtr.routes = append(rtr.routes, rt)
-
-}
-
-// Route holds the state for a route.
-type Route struct {
-	// requirements for this route
-	rs *Reqs
-
-	pattern string
-
-	regexp *regexp.Regexp
-}
-
-func (rt *Route) assignParams() {
-
-	// build a list of requirements based on the route
-	mtchs := paramRegex.FindAllStringSubmatch(rt.pattern, -1)
-
-	log.Debugf("matches %v", mtchs)
-
-	// iterate over the matching pairs to fill in those which didn't have specific
-	// requirements specified
-	for _, mt := range mtchs {
-		attr := strings.ToLower(mt[1])
-
-		if _, ok := rt.rs.reqs[attr]; !ok {
-			rt.rs.reqs[attr] = defaultMatcher
-		}
-	}
-
-	// TODO do the reverse of the above and locate requirements which don't match a
-	// specific attribute in the route.
-
-	// validate
-	rt.rs.mustValidate()
-
+	rtr.routes = append(rtr.routes, newRoute(requirements, pattern, handler))
 }
 
 // Reqs is the requirements of a route
@@ -125,5 +135,10 @@ func (rs *Reqs) mustValidate() {
 			panic(err)
 		}
 	}
+}
 
+// routeMatch route match
+type routeMatch struct {
+	handler http.Handler
+	params  map[string]string
 }
