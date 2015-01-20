@@ -1,12 +1,12 @@
-# fwdr
+# fwdr [![GoDoc](https://img.shields.io/badge/godoc-Reference-brightgreen.svg?style=flat)](http://godoc.org/github.com/wolfeidau/fwdr)
 
 This library provides a simple router interface while also exposing the power of underlying regexes directly to the developer. 
 
-So why did you write this? 
+## So why did you write this? 
 
 Well I want to match large sections of a URL including `/`, which most of the other routers require me to be more eplicit about. 
 
-Why do i need this? 
+## Why do i need this? 
 
 Building a system like a docker registry requires you to include a path in the url that could be many layers deep. So `/something` or `/something/more/than/that`. This is handy for content management systems and services which provide a file store.
 
